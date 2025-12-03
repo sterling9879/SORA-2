@@ -1,0 +1,186 @@
+/* ========================================
+   CONTENT.CSS - Styles for injected elements
+   ======================================== */
+
+/* Notification badge when automation is running */
+.sora-automation-badge {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 10000;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.sora-automation-badge-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.sora-automation-badge-close {
+  margin-left: 10px;
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.sora-automation-badge-close:hover {
+  opacity: 1;
+}
+
+/* Progress indicator overlay */
+.sora-automation-overlay {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  padding: 20px;
+  z-index: 10000;
+  min-width: 300px;
+  max-width: 500px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateX(-50%) translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+.sora-automation-overlay-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.sora-automation-overlay-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.sora-automation-overlay-status {
+  font-size: 13px;
+  color: #667eea;
+}
+
+.sora-automation-overlay-progress {
+  margin-bottom: 15px;
+}
+
+.sora-automation-overlay-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.sora-automation-overlay-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  transition: width 0.3s;
+}
+
+.sora-automation-overlay-progress-text {
+  font-size: 13px;
+  color: #666;
+  text-align: center;
+}
+
+.sora-automation-overlay-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.sora-automation-overlay-btn {
+  flex: 1;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sora-automation-overlay-btn-primary {
+  background: #667eea;
+  color: white;
+}
+
+.sora-automation-overlay-btn-primary:hover {
+  background: #5568d3;
+}
+
+.sora-automation-overlay-btn-secondary {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.sora-automation-overlay-btn-secondary:hover {
+  background: #e0e0e0;
+}
+
+/* Highlight effect for currently processing prompt field */
+.sora-automation-highlight {
+  animation: pulse 2s infinite;
+  border: 2px solid #667eea !important;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(102, 126, 234, 0);
+  }
+}
