@@ -71,7 +71,86 @@ class SoraAutomation {
     // Tentar extrair device-id do cookie
     this.extractDeviceIdFromCookie();
 
+    // Tentar extrair token do localStorage/sessionStorage
+    this.extractTokenFromStorage();
+
+    // Injetar script na pagina para interceptar tokens
+    this.injectTokenCapture();
+
     console.log(`[Sora v${this.version}] Ready - API Mode`);
+  }
+
+  // ============================================================
+  // EXTRAIR TOKEN DO STORAGE
+  // ============================================================
+  extractTokenFromStorage() {
+    try {
+      // Tentar encontrar tokens no localStorage
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        const value = localStorage.getItem(key);
+        if (value && value.includes('eyJ') && value.length > 100) {
+          // Parece um JWT
+          this.capturedHeaders.authorization = `Bearer ${value}`;
+          this.log(`Token encontrado no localStorage (key: ${key})`, 'color: #00ff00');
+          return;
+        }
+      }
+
+      // Tentar encontrar no sessionStorage
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        const value = sessionStorage.getItem(key);
+        if (value && value.includes('eyJ') && value.length > 100) {
+          this.capturedHeaders.authorization = `Bearer ${value}`;
+          this.log(`Token encontrado no sessionStorage (key: ${key})`, 'color: #00ff00');
+          return;
+        }
+      }
+    } catch (e) {
+      this.log('Nao foi possivel acessar storage', 'color: #888888');
+    }
+  }
+
+  // ============================================================
+  // INJETAR SCRIPT PARA CAPTURA DE TOKEN
+  // ============================================================
+  injectTokenCapture() {
+    const script = document.createElement('script');
+    script.textContent = `
+      (function() {
+        // Interceptar localStorage.setItem
+        const originalSetItem = localStorage.setItem.bind(localStorage);
+        localStorage.setItem = function(key, value) {
+          if (value && typeof value === 'string' && value.includes('eyJ')) {
+            window.postMessage({ type: 'SORA_TOKEN_CAPTURED', source: 'localStorage', key: key, value: value }, '*');
+          }
+          return originalSetItem(key, value);
+        };
+
+        // Verificar se ja existe um token
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          const value = localStorage.getItem(key);
+          if (value && value.includes('eyJ') && value.length > 100) {
+            window.postMessage({ type: 'SORA_TOKEN_CAPTURED', source: 'localStorage', key: key, value: value }, '*');
+          }
+        }
+      })();
+    `;
+    document.documentElement.appendChild(script);
+    script.remove();
+
+    // Escutar mensagens do script injetado
+    window.addEventListener('message', (event) => {
+      if (event.data && event.data.type === 'SORA_TOKEN_CAPTURED') {
+        const token = event.data.value;
+        if (token && !this.capturedHeaders.authorization) {
+          this.capturedHeaders.authorization = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+          this.log('Token capturado via injecao!', 'color: #00ff00');
+        }
+      }
+    });
   }
 
   // ============================================================
@@ -107,22 +186,35 @@ class SoraAutomation {
 
       // Capturar headers de requisicoes para o backend do Sora
       if (typeof url === 'string' && url.includes('sora.chatgpt.com')) {
-        const headers = options.headers || {};
+        let headers = options.headers || {};
 
-        // Capturar Authorization
-        if (headers.authorization || headers.Authorization) {
-          self.capturedHeaders.authorization = headers.authorization || headers.Authorization;
+        // Se headers for um objeto Headers, converter para objeto simples
+        if (headers instanceof Headers) {
+          const headersObj = {};
+          headers.forEach((value, key) => {
+            headersObj[key.toLowerCase()] = value;
+          });
+          headers = headersObj;
+        }
+
+        // Capturar Authorization (verificar ambas as formas)
+        const authHeader = headers.authorization || headers.Authorization ||
+                          headers['authorization'] || headers['Authorization'];
+        if (authHeader) {
+          self.capturedHeaders.authorization = authHeader;
           self.log('Authorization capturado!', 'color: #00ff00');
         }
 
         // Capturar oai-device-id
-        if (headers['oai-device-id']) {
-          self.capturedHeaders['oai-device-id'] = headers['oai-device-id'];
+        const deviceId = headers['oai-device-id'] || headers['Oai-Device-Id'];
+        if (deviceId) {
+          self.capturedHeaders['oai-device-id'] = deviceId;
         }
 
         // Capturar openai-sentinel-token
-        if (headers['openai-sentinel-token']) {
-          self.capturedHeaders['openai-sentinel-token'] = headers['openai-sentinel-token'];
+        const sentinelToken = headers['openai-sentinel-token'] || headers['Openai-Sentinel-Token'];
+        if (sentinelToken) {
+          self.capturedHeaders['openai-sentinel-token'] = sentinelToken;
         }
       }
 
@@ -464,19 +556,11 @@ class SoraAutomation {
   async processQueue() {
     if (!this.isActive) return;
 
-    // Verificar se temos headers necessarios
-    if (!this.capturedHeaders.authorization) {
-      this.log('Aguardando captura de headers... Faca uma acao na pagina (ex: clique em algo)', 'color: #ffaa00');
-
-      // Tentar novamente em 2 segundos
-      setTimeout(() => {
-        if (this.isActive && !this.capturedHeaders.authorization) {
-          this.processQueue();
-        } else if (this.isActive) {
-          this.processQueue();
-        }
-      }, 2000);
-      return;
+    // Verificar status de autenticacao
+    if (this.capturedHeaders.authorization) {
+      this.log('Modo API ativo (Authorization capturado)', 'color: #00ff00');
+    } else {
+      this.log('Modo DOM ativo (sem Authorization)', 'color: #ffaa00');
     }
 
     // Fase 1: BURST inicial - enviar os 3 primeiros rapidamente
@@ -599,14 +683,15 @@ class SoraAutomation {
   // ENVIO VIA API DIRETA
   // ============================================================
   async sendPromptViaAPI(promptText) {
+    const headers = this.buildHeaders();
+
+    // Se nao tiver authorization, usar fallback de DOM
+    if (!headers.Authorization) {
+      this.log('Sem Authorization, usando modo DOM...', 'color: #ffaa00');
+      return await this.sendPromptViaDOM(promptText);
+    }
+
     try {
-      const headers = this.buildHeaders();
-
-      if (!headers.Authorization) {
-        this.error('Authorization header nao disponivel. Faca uma acao na pagina primeiro.');
-        return false;
-      }
-
       // Calcular n_frames baseado na duracao
       // 150 = 5s, 300 = 10s, 450 = 20s
       let nFrames = 300; // padrao 10s
@@ -635,7 +720,7 @@ class SoraAutomation {
         storyboard_id: null
       };
 
-      this.log(`Payload: ${JSON.stringify(payload).substring(0, 100)}...`, 'color: #888888');
+      this.log(`Enviando via API: ${promptText.substring(0, 50)}...`, 'color: #667eea');
 
       const response = await fetch('https://sora.chatgpt.com/backend/nf/create', {
         method: 'POST',
@@ -646,16 +731,81 @@ class SoraAutomation {
 
       if (response.ok) {
         const result = await response.json();
-        this.log(`API Response OK: ${JSON.stringify(result).substring(0, 100)}`, 'color: #00ff00');
+        this.log(`API Response OK!`, 'color: #00ff00');
         return true;
       } else {
         const errorText = await response.text();
-        this.error(`API Error ${response.status}: ${errorText.substring(0, 200)}`);
-        return false;
+        this.error(`API Error ${response.status}: ${errorText.substring(0, 100)}`);
+        // Tentar fallback de DOM
+        this.log('Tentando fallback via DOM...', 'color: #ffaa00');
+        return await this.sendPromptViaDOM(promptText);
       }
 
     } catch (err) {
       this.error('Erro ao enviar via API:', err);
+      // Tentar fallback de DOM
+      this.log('Tentando fallback via DOM...', 'color: #ffaa00');
+      return await this.sendPromptViaDOM(promptText);
+    }
+  }
+
+  // ============================================================
+  // ENVIO VIA DOM (FALLBACK)
+  // ============================================================
+  async sendPromptViaDOM(promptText) {
+    try {
+      // Encontrar o textarea
+      const textarea = document.querySelector('textarea[placeholder*="Describe"]') ||
+                       document.querySelector('textarea[placeholder*="describe"]') ||
+                       document.querySelector('textarea[data-testid]') ||
+                       document.querySelector('div[contenteditable="true"]') ||
+                       document.querySelector('textarea');
+
+      if (!textarea) {
+        this.error('Textarea nao encontrado na pagina');
+        return false;
+      }
+
+      // Limpar e preencher o textarea
+      textarea.focus();
+
+      // Usar diferentes metodos para garantir que o React detecte a mudanca
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLTextAreaElement.prototype, 'value'
+      )?.set;
+
+      if (nativeInputValueSetter) {
+        nativeInputValueSetter.call(textarea, promptText);
+      } else {
+        textarea.value = promptText;
+      }
+
+      // Disparar eventos para React
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+      textarea.dispatchEvent(new Event('change', { bubbles: true }));
+
+      await this.sleep(500);
+
+      // Encontrar e clicar no botao de criar
+      const createButton = document.querySelector('button[aria-label*="Create"]') ||
+                          document.querySelector('button[aria-label*="create"]') ||
+                          document.querySelector('button:has(.sr-only:contains("Create"))') ||
+                          Array.from(document.querySelectorAll('button')).find(btn =>
+                            btn.textContent?.toLowerCase().includes('create') ||
+                            btn.querySelector('.sr-only')?.textContent?.toLowerCase().includes('create')
+                          );
+
+      if (!createButton) {
+        this.error('Botao Create nao encontrado');
+        return false;
+      }
+
+      createButton.click();
+      this.log('Prompt enviado via DOM!', 'color: #00ff00');
+      return true;
+
+    } catch (err) {
+      this.error('Erro ao enviar via DOM:', err);
       return false;
     }
   }

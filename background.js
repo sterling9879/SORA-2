@@ -204,7 +204,10 @@ class BackgroundManager {
       type: 'START_QUEUE',
       data: {
         prompts: data.prompts,
-        settings: data.settings
+        settings: {
+          ...data.settings,
+          videoSettings: data.videoSettings
+        }
       }
     }, (response) => {
       if (chrome.runtime.lastError) {
