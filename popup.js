@@ -713,8 +713,8 @@ class UIManager {
         break;
 
       case 'orientation':
-        const orientationText = value === 'portrait' ? 'Portrait' : 'Landscape';
-        valueDisplay.textContent = orientationText;
+        const orientationTexts = { portrait: 'Portrait', landscape: 'Landscape', square: 'Square' };
+        valueDisplay.textContent = orientationTexts[value] || value;
         // Update the icon in the trigger
         this.updateOrientationIcon(value);
         break;
@@ -734,8 +734,10 @@ class UIManager {
 
     if (orientation === 'portrait') {
       iconContainer.innerHTML = '<path fill="currentColor" d="M10.759 1h2.482c.805 0 1.47 0 2.01.044.563.046 1.08.145 1.565.392a4 4 0 0 1 1.748 1.748c.247.485.346 1.002.392 1.564C19 5.29 19 5.954 19 6.758v10.483c0 .805 0 1.47-.044 2.01-.046.563-.145 1.08-.392 1.565a4 4 0 0 1-1.748 1.748c-.485.247-1.002.346-1.564.392-.541.044-1.206.044-2.01.044h-2.483c-.805 0-1.47 0-2.01-.044-.563-.046-1.08-.145-1.565-.392a4 4 0 0 1-1.748-1.748c-.247-.485-.346-1.002-.392-1.564C5 18.71 5 18.046 5 17.242V6.758c0-.805 0-1.47.044-2.01.046-.563.145-1.08.392-1.565a4 4 0 0 1 1.748-1.748c.485-.247 1.002-.346 1.564-.392C9.29 1 9.954 1 10.758 1M8.91 3.038c-.438.035-.663.1-.819.18a2 2 0 0 0-.874.874c-.08.156-.145.38-.18.819C7 5.361 7 5.943 7 6.8v10.4c0 .857 0 1.439.038 1.889.035.438.1.663.18.819a2 2 0 0 0 .874.874c.156.08.38.145.819.18C9.361 21 9.943 21 10.8 21h2.4c.857 0 1.439 0 1.889-.038.438-.035.663-.1.819-.18a2 2 0 0 0 .874-.874c.08-.156.145-.38.18-.819.037-.45.038-1.032.038-1.889V6.8c0-.857 0-1.439-.038-1.889-.035-.438-.1-.663-.18-.819a2 2 0 0 0-.874-.874c-.156-.08-.38-.145-.819-.18C14.639 3 14.057 3 13.2 3h-2.4c-.857 0-1.439 0-1.889.038"></path>';
-    } else {
+    } else if (orientation === 'landscape') {
       iconContainer.innerHTML = '<path fill="currentColor" d="M6.759 5H17.24c.805 0 1.47 0 2.01.044.563.046 1.08.145 1.565.392a4 4 0 0 1 1.748 1.748c.247.485.346 1.002.392 1.564.044.541.044 1.206.044 2.01v2.483c0 .805 0 1.47-.044 2.01-.046.563-.145 1.08-.392 1.565a4 4 0 0 1-1.748 1.748c-.485.247-1.002.346-1.564.392-.541.044-1.206.044-2.01.044H6.758c-.805 0-1.47 0-2.01-.044-.563-.046-1.08-.145-1.565-.392a4 4 0 0 1-1.748-1.748c-.247-.485-.346-1.002-.392-1.564C1 14.71 1 14.046 1 13.242v-2.483c0-.805 0-1.47.044-2.01.046-.563.145-1.08.392-1.565a4 4 0 0 1 1.748-1.748c.485-.247 1.002-.346 1.564-.392C5.29 5 5.954 5 6.758 5M4.91 7.038c-.438.035-.663.1-.819.18a2 2 0 0 0-.874.874c-.08.156-.145.38-.18.819C3 9.361 3 9.943 3 10.8v2.4c0 .857 0 1.439.038 1.889.035.438.1.663.18.819a2 2 0 0 0 .874.874c.156.08.38.145.819.18C5.361 17 5.943 17 6.8 17h10.4c.857 0 1.439 0 1.889-.038.438-.035.663-.1.819-.18a2 2 0 0 0 .874-.874c.08-.156.145-.38.18-.819.037-.45.038-1.032.038-1.889v-2.4c0-.857 0-1.439-.038-1.889-.035-.438-.1-.663-.18-.819a2 2 0 0 0-.874-.874c-.156-.08-.38-.145-.819-.18C18.639 7 18.057 7 17.2 7H6.8c-.857 0-1.439 0-1.889.038"></path>';
+    } else if (orientation === 'square') {
+      iconContainer.innerHTML = '<rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="2" fill="none"></rect>';
     }
   }
 
@@ -802,8 +804,8 @@ class UIManager {
         break;
 
       case 'orientation':
-        const orientationText = value === 'portrait' ? 'Portrait' : 'Landscape';
-        valueDisplay.textContent = orientationText;
+        const orientationTextMap = { portrait: 'Portrait', landscape: 'Landscape', square: 'Square' };
+        valueDisplay.textContent = orientationTextMap[value] || value;
         this.updateOrientationIcon(value);
         break;
 

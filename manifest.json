@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Sora 2 Automation",
-  "version": "4.0.0",
+  "version": "5.0.0",
   "description": "Automate video generation in Sora 2 with templates and batch processing",
   "permissions": [
     "storage",
